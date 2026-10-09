@@ -139,8 +139,8 @@ svg .dim{stroke:var(--ink);stroke-width:1.2}
         <button id="ms" aria-pressed="true">เทียบคู่</button>
       </div>
       <div class="seg" role="group" aria-label="มุมกล้อง">
-        <button id="cOb" aria-pressed="true">มุมเอียง</button>
-        <button id="cTop" aria-pressed="false">มุมบน</button>
+        <button id="cOb" aria-pressed="false">มุมเอียง</button>
+        <button id="cTop" aria-pressed="true">มุมบน</button>
         <button id="cNear" aria-pressed="false">ใกล้จุดกลับรถ</button>
       </div>
       <div class="ctl">
@@ -806,7 +806,7 @@ const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true; controls.maxPolarAngle = 1.48; controls.minDistance = 12; controls.maxDistance = 520;
 
 let worlds = null;
-let mode = 'split', cam = 'ob', speed = 1, running = true, tween = null;
+let mode = 'split', cam = 'top', speed = 1, running = true, tween = null;
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function viewAspect(){
