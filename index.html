@@ -151,7 +151,7 @@ svg .dim{stroke:var(--ink);stroke-width:1.2}
           <button id="sp4" aria-pressed="false">6×</button>
         </div>
       </div>
-      <label class="ctl" for="dem">รถกลับรถ <input id="dem" type="range" min="2" max="16" step="1" value="12"> <output id="demOut">12</output> คัน/นาที ต่อฝั่ง</label>
+      <label class="ctl" for="dem">รถกลับรถ <input id="dem" type="range" min="2" max="16" step="1" value="7"> <output id="demOut">7</output> คัน/นาที ต่อฝั่ง</label>
       <label class="ctl" for="thr">รถทางตรง <input id="thr" type="range" min="400" max="2400" step="100" value="1000"> <output id="thrOut">1000</output> คัน/ชม. ต่อฝั่ง</label>
       <label class="ctl chk" for="lc"><input id="lc" type="checkbox" checked> รถเปลี่ยนเลน</label>
       <button class="btn" id="reset">เริ่มใหม่</button>
@@ -346,7 +346,7 @@ function makeScenario(type){
 
 class Sim {
   constructor(type, seed){
-    this.type = type; this.seed = seed; this.uDemand = 12; this.thrDemand = 1000; this.lc = true;
+    this.type = type; this.seed = seed; this.uDemand = 7; this.thrDemand = 1000; this.lc = true;
     this.S = makeScenario(type); this.reset();
   }
   reset(){
