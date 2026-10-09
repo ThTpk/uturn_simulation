@@ -9,7 +9,7 @@
 
 ## วิธีเปิด
 
-เปิดไฟล์ [`uturn-3d.html`](uturn-3d.html) ในเบราว์เซอร์ (ต้องต่ออินเทอร์เน็ตเพื่อโหลด Three.js และฟอนต์)
+เปิดไฟล์ [`index.html`](index.html) ในเบราว์เซอร์ หรือเปิดผ่าน GitHub Pages ที่ https://thtpk.github.io/uturn_simulation/ (ต้องต่ออินเทอร์เน็ตเพื่อโหลด Three.js และฟอนต์)
 
 ## สิ่งที่จำลอง
 
