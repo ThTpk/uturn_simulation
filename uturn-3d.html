@@ -1,0 +1,1072 @@
+<title>U-Turn โรบินสัน–โฮมโปร</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: a road-sign toolbar over a full-width 3D stage, live lane boards beneath, then a plain explainer with two turning-circle diagrams */
+:root{
+  --bg:#eceee9; --panel:#ffffff; --ink:#1a1f1c; --muted:#5b645f; --line:#d3d8d2;
+  --sign:#f2b705; --sign-ink:#1a1a12;
+  --eb:#e8920c; --wb:#0f9d95; --stop:#d63f31; --go:#2b9a57;
+  --stage:#cdd6d3; --asph:#4a5054; --asph-line:#f3f3ee; --island:#7fa36b;
+  --f-display:"Anuphan","IBM Plex Sans Thai",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans Thai",system-ui,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111513; --panel:#191e1c; --ink:#e6ebe7; --muted:#9aa49e; --line:#2b3330;
+    --stage:#1c2422; --asph:#3a3f43; --asph-line:#d9dbd5; --island:#5d7f4f; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111513; --panel:#191e1c; --ink:#e6ebe7; --muted:#9aa49e; --line:#2b3330;
+  --stage:#1c2422; --asph:#3a3f43; --asph-line:#d9dbd5; --island:#5d7f4f; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.6;padding-inline:16px;padding-block:20px 48px}
+.wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.25}
+h1{font-size:clamp(1.6rem,3.4vw,2.4rem);font-weight:700}
+h2{font-size:1.35rem;font-weight:700}
+h3{font-size:1.05rem;font-weight:600}
+p{margin:0}
+.eyebrow{font-family:var(--f-mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+header.top{display:flex;flex-direction:column;gap:8px;max-width:72ch}
+header.top p{color:var(--muted)}
+
+/* toolbar */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.seg{display:inline-flex;border:1.5px solid var(--ink);border-radius:8px;overflow:hidden}
+.seg button{font:inherit;font-weight:500;border:0;background:transparent;color:var(--ink);padding:7px 14px;cursor:pointer;border-right:1.5px solid var(--ink)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--sign);color:var(--sign-ink);font-weight:600}
+.seg button:focus-visible,.btn:focus-visible,input:focus-visible{outline:3px solid var(--wb);outline-offset:2px}
+.btn{font:inherit;border:1.5px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:6px 12px;cursor:pointer}
+.btn:hover{border-color:var(--ink)}
+.ctl{display:flex;align-items:center;gap:8px;font-size:.88rem;color:var(--muted)}
+.ctl output{font-family:var(--f-mono);color:var(--ink);min-width:2.5ch;text-align:right}
+.ctl input[type=range]{accent-color:var(--eb);width:130px}
+
+/* stage */
+.stage{position:relative;border-radius:12px;overflow:hidden;background:var(--stage);height:clamp(380px,64vh,720px);border:1px solid var(--line)}
+.stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.vp-label{position:absolute;left:12px;display:flex;gap:8px;align-items:center;pointer-events:none;font-family:var(--f-display);font-weight:600;font-size:.95rem;background:var(--panel);color:var(--ink);padding:4px 10px 4px 4px;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.vp-label .tag{background:var(--sign);color:var(--sign-ink);border-radius:4px;padding:1px 7px;font-family:var(--f-mono);font-size:.78rem}
+.split-line{position:absolute;left:0;right:0;top:50%;height:2px;background:var(--ink);opacity:.5;pointer-events:none}
+.hint{position:absolute;right:12px;bottom:10px;font-size:.78rem;color:var(--ink);background:var(--panel);opacity:.85;padding:3px 8px;border-radius:5px;pointer-events:none}
+
+.legend{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:.86rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.sw{width:18px;height:10px;border-radius:2px;display:inline-block}
+.sw.car{background:#b9c0c6;border:1px solid #8a9298}
+.sw.eb{background:var(--eb)}.sw.wb{background:var(--wb)}
+.sw.stop{background:var(--stop);opacity:.75}.sw.go{background:var(--go);opacity:.75}
+
+/* lane boards */
+.boards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:16px}
+.board{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.board header{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.board .tag{background:var(--sign);color:var(--sign-ink);font-family:var(--f-mono);font-size:.78rem;border-radius:4px;padding:1px 7px}
+.dirlabel{font-size:.78rem;color:var(--muted);font-family:var(--f-mono);letter-spacing:.04em}
+.lane{display:grid;grid-template-columns:minmax(0,1.3fr) auto minmax(0,1fr);gap:10px;align-items:center;padding:6px 0;border-top:1px dashed var(--line)}
+.lname{font-size:.9rem;min-width:0}
+.lname small{color:var(--muted);display:block;font-size:.76rem;line-height:1.3}
+.pill{font-size:.76rem;font-weight:600;border-radius:999px;padding:2px 10px;white-space:nowrap;border:1.5px solid currentColor}
+.pill[data-s="go"]{color:var(--go)}
+.pill[data-s="stop"]{color:#fff;background:var(--stop);border-color:var(--stop)}
+.pill[data-s="queue"]{color:var(--eb)}
+.pill[data-s="spill"]{color:#fff;background:var(--eb);border-color:var(--eb)}
+.pct{display:flex;align-items:center;gap:8px;font-family:var(--f-mono);font-size:.8rem;font-variant-numeric:tabular-nums}
+.bar{display:flex;flex:1;height:8px;background:var(--line);border-radius:4px;overflow:hidden;min-width:40px}
+.bar i{display:block;height:100%;background:var(--stop);width:0%;transition:width .3s}
+.bar i.bm{background:var(--eb)}
+.median{font-size:.74rem;text-align:center;color:var(--muted);background:repeating-linear-gradient(45deg,transparent 0 6px,var(--line) 6px 8px);border-radius:4px;padding:2px}
+.board footer{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.84rem;color:var(--muted);border-top:1px solid var(--line);padding-top:10px}
+.board footer b{font-family:var(--f-mono);color:var(--ink);font-weight:500}
+.note{font-size:.82rem;color:var(--muted);max-width:90ch}
+.chk input{accent-color:var(--eb);width:16px;height:16px}
+.blink{width:10px;height:10px;border-radius:2px;background:#ffb300;display:inline-block;animation:bl .8s steps(2) infinite}
+@keyframes bl{50%{opacity:.15}}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:600}
+.btn:disabled{opacity:.5;cursor:progress}
+.evhead{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between}
+.evgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:12px}
+.metric{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.metric h3{font-size:.92rem;font-weight:600}
+.metric .hint2{font-size:.76rem;color:var(--muted)}
+.mrow{display:grid;grid-template-columns:3.6em minmax(0,1fr) auto;gap:8px;align-items:center;font-family:var(--f-mono);font-size:.82rem;font-variant-numeric:tabular-nums}
+.mrow .mb{height:12px;background:var(--line);border-radius:3px;overflow:hidden}
+.mrow .mb i{display:block;height:100%;width:0;transition:width .4s}
+.mrow.t1 .mb i{background:var(--muted)}
+.mrow.t2 .mb i{background:var(--sign)}
+.mrow b{font-weight:500;min-width:6ch;text-align:right}
+.mrow .win{color:var(--go)}
+.verdict-line{font-family:var(--f-display);font-size:1.05rem;font-weight:600;max-width:80ch}
+
+/* explainer */
+.explain{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));gap:20px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.card ol,.card ul{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:6px}
+.diagram{overflow-x:auto}
+.diagram svg{width:100%;max-width:560px;height:auto;display:block}
+svg .asph{fill:var(--asph)}
+svg .isl{fill:var(--island)}
+svg .lnl{stroke:var(--asph-line);stroke-width:1.2;fill:none}
+svg .lnl.d{stroke-dasharray:8 8}
+svg .t{font-family:var(--f-body);font-size:11px;fill:var(--ink)}
+svg .tw{font-family:var(--f-body);font-size:10.5px;fill:#fff}
+svg .dim{stroke:var(--ink);stroke-width:1.2}
+.verdict{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px}
+.verdict .card h3{display:flex;gap:8px;align-items:center}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;flex:none}
+.prose{max-width:70ch;display:flex;flex-direction:column;gap:10px}
+@media (prefers-reduced-motion: reduce){ .bar i{transition:none} }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <span class="eyebrow">จุดกลับรถ · ระหว่างโรบินสัน กับ โฮมโปร</span>
+    <h1>ปิดช่องเบี่ยงกลับรถ แล้วเลนซ้ายสุดจะวิ่งได้ตลอดไหม?</h1>
+    <p>แบบจำลอง 3 มิติของถนน 3 เลนสวนกัน เทียบ <b>Type 1</b> (ปัจจุบัน มีช่องเบี่ยงให้รอกลับรถ) กับ <b>Type 2</b> (ปิดช่องเบี่ยง ให้รอในเลนขวาของทางหลัก) ลากเพื่อหมุนมุมมอง เลื่อนล้อเมาส์หรือถ่างนิ้วเพื่อซูม</p>
+  </header>
+
+  <section style="display:flex;flex-direction:column;gap:12px">
+    <div class="toolbar">
+      <div class="seg" role="group" aria-label="เลือกแบบ">
+        <button id="m1" aria-pressed="false">Type 1 · ปัจจุบัน</button>
+        <button id="m2" aria-pressed="false">Type 2 · ข้อเสนอ</button>
+        <button id="ms" aria-pressed="true">เทียบคู่</button>
+      </div>
+      <div class="seg" role="group" aria-label="มุมกล้อง">
+        <button id="cOb" aria-pressed="true">มุมเอียง</button>
+        <button id="cTop" aria-pressed="false">มุมบน</button>
+        <button id="cNear" aria-pressed="false">ใกล้จุดกลับรถ</button>
+      </div>
+      <div class="ctl">
+        <button class="btn" id="play">หยุดชั่วคราว</button>
+        <div class="seg" role="group" aria-label="ความเร็ว">
+          <button id="sp1" aria-pressed="true">1×</button>
+          <button id="sp2" aria-pressed="false">2×</button>
+          <button id="sp4" aria-pressed="false">4×</button>
+        </div>
+      </div>
+      <label class="ctl" for="dem">รถกลับรถ <input id="dem" type="range" min="2" max="16" step="1" value="7"> <output id="demOut">7</output> คัน/นาที ต่อฝั่ง</label>
+      <label class="ctl" for="thr">รถทางตรง <input id="thr" type="range" min="400" max="2400" step="100" value="1000"> <output id="thrOut">1000</output> คัน/ชม. ต่อฝั่ง</label>
+      <label class="ctl chk" for="lc"><input id="lc" type="checkbox" checked> รถเปลี่ยนเลน</label>
+      <button class="btn" id="reset">เริ่มใหม่</button>
+    </div>
+
+    <div class="stage" id="stage">
+      <canvas id="c"></canvas>
+      <div class="vp-label" id="lab1" style="top:10px"><span class="tag">Type 1</span>ปัจจุบัน · มีช่องเบี่ยง</div>
+      <div class="vp-label" id="lab2" style="top:calc(50% + 10px)"><span class="tag">Type 2</span>ข้อเสนอ · ปิดช่องเบี่ยง</div>
+      <div class="split-line" id="splitLine"></div>
+      <div class="hint">ลากเพื่อหมุน · ล้อเมาส์เพื่อซูม</div>
+    </div>
+
+    <div class="legend">
+      <span><i class="sw car"></i>รถทางตรง</span>
+      <span><i class="sw eb"></i>รถกลับรถ ขาไปตะวันออก (ฝั่งบน)</span>
+      <span><i class="sw wb"></i>รถกลับรถ ขาไปตะวันตก (ฝั่งล่าง)</span>
+      <span><i class="sw stop"></i>ช่วงเลนที่ต้องหยุดให้รถกลับรถ (สว่างขึ้นเมื่อถูกตัด)</span>
+      <span><i class="sw go"></i>เลนซ้ายสุดที่ไม่ถูกตัด</span>
+      <span><i class="blink"></i>ไฟเลี้ยวกะพริบ = กำลังเปลี่ยนเลนหรือรอแทรก</span>
+    </div>
+    <p class="note">รถที่จะกลับรถเข้ามาได้จากทุกเลน (ครึ่งหนึ่งอยู่เลนขวาอยู่แล้ว อีกครึ่งต้องแทรกเข้ามา) ถ้าแทรกไม่ได้จะจอดรอให้คันข้าง ๆ เว้นที่ ถ้ารอนานเกิน 25 วินาทีจะยอมวิ่งเลยไป รถทางตรงที่ติดคันช้าหรือเจอรถกลับรถตัดหน้า จะหลบไปเลนข้าง ๆ เช่นจากเลนกลางไปเลนซ้ายสุด</p>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:12px">
+    <div class="evhead">
+      <h2>แต่ละแบบให้รถผ่านได้เท่าไร</h2>
+      <div class="ctl"><button class="btn primary" id="evalBtn">ประเมินเร็ว 20 นาที</button><span id="evalNote" aria-live="polite">ตัวเลขด้านล่างนับสดจากแบบจำลองที่กำลังเล่น</span></div>
+    </div>
+    <div class="evgrid" id="evgrid"></div>
+    <p class="verdict-line" id="verdict"></p>
+    <p class="note">ปริมาณผ่าน = จำนวนรถที่วิ่งผ่านช่วงถนนนี้ไปได้ คิดเป็นคันต่อชั่วโมง (รวมสองทิศทาง) · เวลาที่เสียเพิ่ม = เวลาเดินทางเฉลี่ยของรถทางตรงเทียบกับวิ่งโล่ง ๆ ระยะ 460 ม. · "ประเมินเร็ว" รันแบบจำลอง 20 นาทีของทั้งสองแบบด้วยปริมาณรถเท่ากันตามแถบปรับด้านบน</p>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:12px">
+    <h2>สถานะแต่ละเลน (สด)</h2>
+    <div class="boards" id="boards"></div>
+    <p class="note">ตัวเลขเป็นสัดส่วนเวลาที่เลนนั้นต้องหยุดเพราะมีรถกำลังกลับรถตัดผ่าน นับตั้งแต่กด "เริ่มใหม่" เป็นแบบจำลองเชิงแนวคิดเพื่ออธิบาย ไม่ใช่ผลวิเคราะห์ปริมาณจราจรจริง</p>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:16px">
+    <div class="prose">
+      <h2>ทำไมปิดช่องเบี่ยงแล้วรถไม่ต้องเลี้ยวไปถึงเลนซ้ายสุด</h2>
+      <p>รถเก๋งใช้วงเลี้ยวกลับรถกว้างราว 14–15 เมตรเสมอ ไม่ว่าจะเริ่มเลี้ยวจากตรงไหน สิ่งที่เปลี่ยนได้คือ <b>จุดเริ่มเลี้ยว</b> ถ้าเริ่มจากช่องเบี่ยงที่อยู่ในเกาะกลาง ซึ่งชิดฝั่งตรงข้ามมาก วงเลี้ยวก็พาไปจบที่เลนซ้ายสุด ถ้าเริ่มจากเลนขวาของทางหลัก ซึ่งห่างออกมาอีกประมาณหนึ่งช่องจราจร (3.5 ม.) วงเลี้ยวขนาดเดิมจะไปจบที่เลนกลางพอดี</p>
+    </div>
+    <div class="explain">
+      <div class="card">
+        <h3><span class="tag" style="background:var(--sign);color:var(--sign-ink);font-family:var(--f-mono);font-size:.78rem;border-radius:4px;padding:1px 7px">Type 1</span> เริ่มเลี้ยวจากช่องเบี่ยง</h3>
+        <div class="diagram" id="d1"></div>
+        <ol>
+          <li>รถเข้าไปรอในช่องเบี่ยงกลางเกาะ</li>
+          <li>จุดเริ่มเลี้ยวอยู่ห่างฝั่งตรงข้ามแค่ราว 6 ม.</li>
+          <li>วงเลี้ยว ~15 ม. จึงพาไปจบเลนซ้ายสุด ทั้ง 3 เลนของฝั่งตรงข้ามต้องหยุด</li>
+          <li>เมื่อช่องเบี่ยงเต็ม คิวล้นออกมาปิดเลนขวาของทางหลักด้วย</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h3><span class="tag" style="background:var(--sign);color:var(--sign-ink);font-family:var(--f-mono);font-size:.78rem;border-radius:4px;padding:1px 7px">Type 2</span> เริ่มเลี้ยวจากเลนขวาของทางหลัก</h3>
+        <div class="diagram" id="d2"></div>
+        <ol>
+          <li>ปิดช่องเบี่ยง รถกลับรถต่อคิวในเลนขวาของทางหลัก</li>
+          <li>จุดเริ่มเลี้ยวถอยห่างจากฝั่งตรงข้ามอีก ~3.5 ม.</li>
+          <li>วงเลี้ยวเท่าเดิมไปจบเลนกลาง ฝั่งตรงข้ามหยุดแค่เลนขวากับเลนกลาง</li>
+          <li>เลนซ้ายสุดของทั้งสองฝั่งวิ่งผ่านได้ตลอด</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:16px">
+    <h2>ข้อแลกเปลี่ยนที่ควรคิดก่อนปรับจริง</h2>
+    <div class="verdict">
+      <div class="card">
+        <h3><i class="dot" style="background:var(--go)"></i>สิ่งที่ได้</h3>
+        <ul>
+          <li>เลนซ้ายสุดทั้งสองฝั่งไม่ถูกตัด รถทางตรงและรถเข้า–ออกห้างวิ่งได้ต่อเนื่อง</li>
+          <li>รถกลับรถตัดผ่านแค่ 2 เลนแทน 3 เลน ใช้เวลาข้ามสั้นลง</li>
+          <li>ไม่มีปัญหาคิวล้นช่องเบี่ยงที่ไปบังเลนขวาแบบไม่คาดคิด</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3><i class="dot" style="background:var(--eb)"></i>สิ่งที่เสีย</h3>
+        <ul>
+          <li>เลนขวาของทางหลักกลายเป็นเลนรอกลับรถ ช่วงก่อนถึงจุดกลับรถเหลือทางตรง 2 เลน</li>
+          <li>ถ้ารถกลับรถมาก คิวในเลนขวาอาจยาวย้อนไปถึงทางแยกก่อนหน้า</li>
+          <li>รถที่กลับรถแล้วออกเลนกลาง ถ้าจะเข้าห้างต้องเบี่ยงซ้ายตัดเลนซ้ายอีกครั้ง</li>
+          <li>รถที่จะกลับรถแต่มาในเลนซ้ายหรือเลนกลาง ต้องแทรกเข้าคิวในเลนขวา ถ้าคิวยาวจะจอดรอแทรกและขวางเลนนั้น (เกิดได้ทั้งสองแบบ ดูแถบส้มในสถานะเลน)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3><i class="dot" style="background:var(--stop)"></i>ต้องทำเพิ่ม</h3>
+        <ul>
+          <li>ป้ายและเส้นจราจรล่วงหน้า บอกว่าเลนขวาเป็นเลนกลับรถ ให้รถทางตรงหลบก่อน</li>
+          <li>รถบัสและรถบรรทุกวงเลี้ยวกว้างกว่ารถเก๋ง อาจยังต้องกวาดถึงเลนซ้าย ควรสำรวจสัดส่วนรถใหญ่</li>
+          <li>ควรนับรถจริงช่วงชั่วโมงเร่งด่วน (รถทางตรง รถกลับรถ ความยาวคิว) ก่อนตัดสินใจ</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// SIM-START
+const XMAX = 230, XC = 16, CAR_L = 4.5, HALF = 2.25;
+// lane centres: index 0 = left/curb lane, 1 = middle, 2 = right lane (next to the median)
+const Z = { EB: [-12.75, -9.25, -5.75], WB: [12.75, 9.25, 5.75] };
+const SGN = { EB: 1, WB: -1 };
+const FREE_TT = 2 * XMAX / 12.2;   // free-flow travel time of a through car over the modelled stretch
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+class PathB {
+  constructor(x, z){ this.p = [[x, z]]; this.m = {}; }
+  last(){ return this.p[this.p.length - 1]; }
+  line(x, z){
+    const [x0, z0] = this.last(); const n = Math.max(1, Math.ceil(Math.hypot(x - x0, z - z0) / 0.5));
+    for (let i = 1; i <= n; i++){ const t = i / n; this.p.push([x0 + (x - x0) * t, z0 + (z - z0) * t]); }
+    return this;
+  }
+  taper(x, z){
+    const [x0, z0] = this.last(); const n = Math.max(1, Math.ceil(Math.abs(x - x0) / 0.5));
+    for (let i = 1; i <= n; i++){ const t = i / n, e = (1 - Math.cos(Math.PI * t)) / 2; this.p.push([x0 + (x - x0) * t, z0 + (z - z0) * e]); }
+    return this;
+  }
+  curve(f, n){ for (let i = 1; i <= n; i++) this.p.push(f(i / n)); return this; }
+  mark(k){ this.m[k] = this.p.length - 1; return this; }
+  build(step = 0.25){
+    const p = this.p, cum = [0];
+    for (let i = 1; i < p.length; i++) cum.push(cum[i - 1] + Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]));
+    const len = cum[cum.length - 1], N = Math.floor(len / step) + 2;
+    const xs = new Float32Array(N), zs = new Float32Array(N);
+    let j = 0;
+    for (let k = 0; k < N; k++){
+      const s = Math.min(k * step, len);
+      while (j < p.length - 2 && cum[j + 1] < s) j++;
+      const seg = (cum[j + 1] - cum[j]) || 1, t = (s - cum[j]) / seg;
+      xs[k] = p[j][0] + (p[j + 1][0] - p[j][0]) * t; zs[k] = p[j][1] + (p[j + 1][1] - p[j][1]) * t;
+    }
+    const marks = {}; for (const k in this.m) marks[k] = cum[this.m[k]];
+    return { xs, zs, len, step, marks, N };
+  }
+}
+function sampleP(P, s, o){
+  s = Math.max(0, Math.min(s, P.len));
+  let i = Math.floor(s / P.step); if (i > P.N - 3) i = P.N - 3;
+  const t = Math.min(1, s / P.step - i);
+  o.x = P.xs[i] + (P.xs[i + 1] - P.xs[i]) * t; o.z = P.zs[i] + (P.zs[i + 1] - P.zs[i]) * t;
+  const hx = P.xs[i + 1] - P.xs[i], hz = P.zs[i + 1] - P.zs[i], l = Math.hypot(hx, hz);
+  if (l > 1e-4){ o.hx = hx / l; o.hz = hz / l; }
+  return o;
+}
+function laneOf(z, dir){ const a = Z[dir]; for (let k = 0; k < 3; k++) if (Math.abs(z - a[k]) < 1.75) return k; return -1; }
+function moveDir(c){ return c.hx > 0.6 ? 'EB' : c.hx < -0.6 ? 'WB' : null; }
+
+function makeScenario(type){
+  const thr = { EB: [], WB: [] };
+  for (let k = 0; k < 3; k++){
+    thr.EB[k] = new PathB(-XMAX, Z.EB[k]).line(XMAX, Z.EB[k]).build();
+    thr.WB[k] = new PathB(XMAX, Z.WB[k]).line(-XMAX, Z.WB[k]).build();
+  }
+  const u = {};
+  let zs, ze, cross;
+  if (type === 1){
+    zs = -2; ze = Z.WB[0]; cross = [2, 1, 0];          // start inside the median pocket, end in the far-left lane
+  } else {
+    zs = Z.EB[2]; ze = Z.WB[1]; cross = [2, 1];        // start in the main right lane, end in the middle lane
+  }
+  const R = (ze - zs) / 2, cz = (ze + zs) / 2;
+  const eb = new PathB(-XMAX, Z.EB[2]);
+  const wb = new PathB(XMAX, Z.WB[2]);
+  if (type === 1){ eb.line(-80, Z.EB[2]).taper(-62, zs); wb.line(80, Z.WB[2]).taper(62, -zs); }
+  u.EB = eb.line(-XC, zs).mark('a0')
+    .curve(t => [-XC + R * Math.sin(Math.PI * t), cz - R * Math.cos(Math.PI * t)], 80).mark('a1')
+    .line(-XMAX, ze).build();
+  u.WB = wb.line(XC, -zs).mark('a0')
+    .curve(t => [XC - R * Math.sin(Math.PI * t), -cz + R * Math.cos(Math.PI * t)], 80).mark('a1')
+    .line(XMAX, -ze).build();
+  const zones = {
+    EB: { owner: 'EB', dir: 'WB', lanes: cross, xmin: -XC - 3, xmax: -XC + R + 2.5, count: 0, since: 0 },
+    WB: { owner: 'WB', dir: 'EB', lanes: cross, xmin: XC - R - 2.5, xmax: XC + 3, count: 0, since: 0 },
+  };
+  // progress coordinate u = x * SGN[dir]: U-turn cars must be in the right lane by lcU, and can join the U-turn path up to onUMax
+  const lcU = type === 1 ? -86 : -24, onUMax = type === 1 ? -82 : -20;
+  return { type, thr, u, zones, R, lcU, onUMax, thrLanes: type === 1 ? [0, 1, 2] : [0, 1], allowed: type === 1 ? [0, 1, 2] : [0, 1] };
+}
+
+class Sim {
+  constructor(type, seed){
+    this.type = type; this.seed = seed; this.uDemand = 7; this.thrDemand = 1000; this.lc = true;
+    this.S = makeScenario(type); this.reset();
+  }
+  reset(){
+    this.r = mulberry32(this.seed); this.cars = []; this.t = 0; this.nid = 1;
+    for (const k in this.S.zones){ this.S.zones[k].count = 0; }
+    this.src = [];
+    const thrL = this.lc ? [0, 1, 2] : this.S.thrLanes;
+    for (const dir of ['EB', 'WB']){
+      for (const k of thrL) this.src.push({ dir, kind: 't', lane: k, rate: () => this.thrDemand / 3600 / thrL.length });
+      this.src.push({ dir, kind: 'u', lane: -1, rate: () => this.uDemand / 60 });
+    }
+    for (const q of this.src){ q.pend = 0; q.next = this.exp(q.rate()); q.pick = -1; }
+    this.resetStats();
+  }
+  resetStats(){
+    this.el = 0; this.blk = { EB: [0, 0, 0], WB: [0, 0, 0] }; this.blkM = { EB: [0, 0, 0], WB: [0, 0, 0] };
+    this.uDone = { EB: 0, WB: 0 }; this.thrDone = 0; this.thrTT = 0; this.uOut = 0; this.uTT = 0; this.lcCount = 0; this.missed = 0;
+  }
+  exp(rate){ return -Math.log(1 - this.r()) / rate; }
+  spawn(){
+    for (const q of this.src){
+      while (this.t >= q.next){ q.pend = Math.min(q.pend + 1, 40); q.next += this.exp(q.rate()); }
+      if (q.pend > 0){
+        if (q.pick < 0){
+          if (q.kind === 't') q.pick = q.lane;
+          else { const r = this.r(); q.pick = !this.lc ? 2 : r < 0.5 ? 2 : r < 0.8 ? 1 : 0; }   // half the U-turn cars arrive already in the right lane
+        }
+        const P = q.kind === 'u' && q.pick === 2 ? this.S.u[q.dir] : this.S.thr[q.dir][q.pick];
+        const x0 = P.xs[0], z0 = P.zs[0];
+        let free = true;
+        for (const c of this.cars) if (Math.abs(c.z - z0) < 1.7 && Math.abs(c.x - x0) < CAR_L + 6){ free = false; break; }
+        if (free){ q.pend--; this.add(q, q.pick, P); q.pick = -1; }
+      }
+    }
+  }
+  add(q, lane, P){
+    const c = { id: this.nid++, P, s: 0, v: 9, dir: q.dir, kind: q.kind, lane, v0: 11 + this.r() * 2.5, born: this.t,
+      onU: P === this.S.u[q.dir], permit: false, inZone: false, wait: -1, x: 0, z: 0, hx: 1, hz: 0, acc: 0, tint: this.r(),
+      latOff: 0, latV: 0, cool: 1, waitMerge: false, mergeTarget: -1, stopX: null, sig: null, lead: null, leadGap: 1e9, zoneAhead: null };
+    const u = this.S.u[q.dir].marks; c.a0 = u.a0; c.a1 = u.a1;
+    if (q.kind === 'u') c.zone = this.S.zones[q.dir];
+    sampleP(c.P, 0, c); this.cars.push(c);
+  }
+  queued(dir){
+    let n = 0; for (const c of this.cars) if (c.kind === 'u' && c.dir === dir && !c.permit) n++;
+    for (const q of this.src) if (q.kind === 'u' && q.dir === dir) n += q.pend;
+    return n;
+  }
+  spill(dir){ // type 1: U-turn cars stuck outside the pocket, in the main right lane
+    for (const c of this.cars) if (c.onU && c.dir === dir && !c.permit && c.v < 1 && c.x * SGN[dir] < -80) return true;
+    return false;
+  }
+  mergeWait(dir, k){
+    for (const c of this.cars) if (c.waitMerge && c.v < 1 && c.dir === dir && laneOf(c.z, dir) === k) return true;
+    return false;
+  }
+  canGo(c){
+    const zn = c.zone;
+    if (zn.count > 0) return (this.t - zn.since) < 7;   // follow the turning platoon, but cap how long opposing traffic is held
+    const waited = this.t - c.wait, w = zn.xmax - zn.xmin;
+    for (const o of this.cars){
+      const md = moveDir(o); if (md !== zn.dir) continue;
+      if (o.kind === 'u' && o.s < o.a1 + 3) continue;
+      const k = laneOf(o.z, md); if (k < 0 || !zn.lanes.includes(k)) continue;
+      const d = md === 'EB' ? zn.xmin - (o.x + HALF) : (o.x - HALF) - zn.xmax;
+      if (d < -(w + CAR_L)) continue;
+      if (d < 0) return false;
+      const need = waited > 5 ? Math.max(4, o.v * 1.4) : Math.max(10, o.v * 3);
+      if (d < need) return false;
+    }
+    return true;
+  }
+  // gaps in the target lane; relaxed = squeezing in at walking pace while the target lane is crawling
+  tryChange(c, tgt, relaxed, needBetter){
+    const dir = c.dir, sg = SGN[dir], zt = Z[dir][tgt];
+    let fg = 1e9, fv = 0, rg = 1e9, rv = 0;
+    for (const o of this.cars){
+      if (o === c || moveDir(o) !== dir || Math.abs(o.z - zt) > 1.9) continue;
+      const d = (o.x - c.x) * sg;
+      if (d >= 0){ const g = d - CAR_L; if (g < fg){ fg = g; fv = o.v; } }
+      else { const g = -d - CAR_L; if (g < rg){ rg = g; rv = o.v; } }
+    }
+    if (relaxed){ if (fg < 0.8 || rg < 0.8 || rv > 2) return false; }
+    else if (fg < 3 + 0.5 * c.v || rg < 3 + Math.max(0, rv - c.v) * 1.5 + 0.3 * rv) return false;
+    if (needBetter && !(fg > c.leadGap + 8 || fv > (c.lead ? c.lead.v : 0) + 3)) return false;
+    let P;
+    if (c.kind === 'u' && tgt === 2){ if (c.x * sg > this.S.onUMax) return false; P = this.S.u[dir]; c.onU = true; }
+    else P = this.S.thr[dir][tgt];
+    c.sig = tgt > c.lane ? 'R' : 'L';
+    c.latOff += Z[dir][c.lane] - zt; c.lane = tgt; c.P = P; c.cool = 3;
+    c.waitMerge = false; c.mergeTarget = -1; c.stopX = null; this.lcCount++;
+    return true;
+  }
+  adjSlow(c, tgt){
+    const dir = c.dir, sg = SGN[dir], zt = Z[dir][tgt];
+    for (const o of this.cars){
+      if (o === c || moveDir(o) !== dir || Math.abs(o.z - zt) > 1.9) continue;
+      const d = (o.x - c.x) * sg; if (d > -8 && d < 12 && o.v < 2) return true;
+    }
+    return false;
+  }
+  inZoneRange(c){
+    for (const zk in this.S.zones){ const zn = this.S.zones[zk]; if (zn.dir === c.dir && c.x > zn.xmin - 1 && c.x < zn.xmax + 1) return true; }
+    return Math.abs(c.x) < 22 && c.kind === 'u';
+  }
+  decide(c, dt){
+    c.cool -= dt;
+    if (c.onU){ c.sig = c.s > c.a0 - 40 && c.s < c.a1 + 3 ? 'R' : (Math.abs(c.latOff) > 0.3 ? c.sig : null); return; }
+    if (Math.abs(c.latOff) > 0.3) return;               // still moving across
+    const S = this.S, sg = SGN[c.dir], u = c.x * sg;
+    if (moveDir(c) !== c.dir) return;
+    if (c.kind === 'u'){
+      const tgt = c.lane + 1, lcU = S.lcU - (tgt === 2 ? 0 : 25), dist = lcU - u;
+      const urgent = dist < 20 || (tgt === 2 && this.adjSlow(c, tgt));
+      c.sig = 'R';
+      if (c.cool > 0 && !urgent) return;
+      if (this.tryChange(c, tgt, urgent && c.v < 1.5)) return;
+      if (urgent){
+        if (!c.waitMerge) c.waitSince = this.t;
+        if (this.t - c.waitSince > 25 && c.v < 1){        // nobody let them in: give up and drive on past the U-turn
+          c.kind = 't'; c.gaveUp = true; c.waitMerge = false; c.stopX = null; c.sig = null; this.missed++; return;
+        }
+        c.waitMerge = true; c.mergeTarget = tgt;
+        if (c.stopX == null){ const su = Math.min(u + Math.max(2, c.v * c.v / 6 + 1), lcU); c.stopX = su * sg; }
+      }
+      return;
+    }
+    // through traffic
+    if (S.type === 2 && c.lane === 2){
+      if (u < -XC - 12){                                 // the right lane is the U-turn queue: get out of it
+        c.sig = 'L';
+        const stuck = c.lead && c.leadGap < 12 && c.lead.v < 1 && c.v < 1;
+        if (c.cool > 0 && !stuck) return;
+        if (this.tryChange(c, 1, stuck)) return;
+        if (stuck){ c.waitMerge = true; c.mergeTarget = 1; }
+        return;
+      }
+      c.waitMerge = false;
+    }
+    c.sig = null;
+    if (c.cool > 0 || this.inZoneRange(c)) return;
+    // a U-turn is cutting my lane ahead: slide to a lane it does not cross (Type 2: middle -> left)
+    if (c.zoneAhead){
+      const zn = c.zoneAhead;
+      for (const t of [c.lane - 1, c.lane + 1]) if (S.allowed.includes(t) && !zn.lanes.includes(t) && this.tryChange(c, t, false)) return;
+    }
+    // slow car ahead: overtake on either side
+    if (c.lead && c.leadGap < 45 && c.lead.v < 4 && c.v0 - c.lead.v > 5){
+      for (const t of [c.lane - 1, c.lane + 1]) if (S.allowed.includes(t) && this.tryChange(c, t, false, true)) return;
+    }
+  }
+  step(dt){
+    this.t += dt; this.el += dt; this.spawn();
+    const cars = this.cars, n = cars.length;
+    for (let i = 0; i < n; i++){
+      const c = cars[i]; let gap = 1e9, vl = 0, lead = null;
+      for (let j = 0; j < n; j++){
+        if (i === j) continue; const o = cars[j];
+        if (o.P === c.P){ if (o.s > c.s){ const g = o.s - c.s - CAR_L; if (g < gap){ gap = g; vl = o.v; lead = o; } } continue; }
+        const dx = o.x - c.x, dz = o.z - c.z, d = dx * c.hx + dz * c.hz;
+        if (d <= 0 || d > 70) continue;
+        if (Math.abs(-dx * c.hz + dz * c.hx) > 1.9) continue;
+        if (o.hx * c.hx + o.hz * c.hz < -0.3) continue;
+        const g = d - CAR_L; if (g < gap){ gap = g; vl = o.v; lead = o; }
+      }
+      c.lead = lead; c.leadGap = gap; c.zoneAhead = null;
+      const md = moveDir(c);
+      const turning = c.kind === 'u' && c.s < c.a1 + 3;
+      if (!turning && md){
+        for (const zk in this.S.zones){
+          const zn = this.S.zones[zk]; if (zn.count === 0 || zn.dir !== md) continue;
+          const k = laneOf(c.z, md); if (k < 0 || !zn.lanes.includes(k)) continue;
+          const dist = md === 'EB' ? zn.xmin - (c.x + HALF) : (c.x - HALF) - zn.xmax;
+          if (dist > -0.3 && dist < 80){ c.zoneAhead = zn; if (dist < gap){ gap = dist; vl = 0; } }
+        }
+      }
+      // courtesy: hold back for a stopped car that is waiting to squeeze into my lane just ahead of me
+      if (md && !(c.onU && turning)){
+        const lk = laneOf(c.z, md), s2 = SGN[md];
+        for (const o of cars){
+          if (o === c || !o.waitMerge || o.v > 1.5 || o.mergeTarget !== lk || o.dir !== md || moveDir(o) !== md) continue;
+          const d = (o.x - c.x) * s2; if (d < CAR_L + 0.5 || d > 25) continue;
+          const g = Math.max(0, d - CAR_L); if (c.v > 3 && g < c.v * c.v / 8) continue;
+          if (g < gap){ gap = g; vl = 0; }
+        }
+      }
+      if (c.stopX != null){ const d = (c.stopX - c.x) * SGN[c.dir] + 2; if (d < gap){ gap = Math.max(d, 0); vl = 0; } }
+      if (c.onU && !c.permit){ const d = c.a0 - c.s + 2; if (d < gap){ gap = Math.max(d, 0); vl = 0; } }
+      let v0 = c.v0;
+      if (c.onU){
+        if (c.s < c.a0) v0 = Math.min(v0, Math.sqrt(4.5 * 4.5 + 2 * 1.6 * (c.a0 - c.s)));
+        else if (c.s < c.a1) v0 = 4.5;
+      }
+      const v = c.v, sStar = 2 + v * 1.2 + v * (v - vl) / 4.9;
+      const a = 2 * (1 - Math.pow(v / v0, 4) - Math.pow(Math.max(0, sStar) / Math.max(gap, 0.05), 2));
+      c.acc = Math.max(-9, Math.min(2.2, a));
+    }
+    for (const c of cars){
+      c.v = Math.max(0, c.v + c.acc * dt); c.s += c.v * dt;
+      if (c.onU && !c.permit && c.s > c.a0){ c.s = c.a0; c.v = 0; }
+      sampleP(c.P, c.s, c);
+      if (c.latOff !== 0){
+        const st = Math.sign(c.latOff) * Math.min(Math.abs(c.latOff), (c.v > 0.5 ? 1.3 : 0.7) * dt);
+        c.latOff -= st; c.latV = -st / dt;
+      } else c.latV = 0;
+      c.z += c.latOff;
+    }
+    for (const c of cars){
+      if (this.lc) this.decide(c, dt);
+      if (!c.onU) continue;
+      if (!c.permit && c.a0 - c.s < 6){
+        if (c.wait < 0) c.wait = this.t;
+        if (this.canGo(c)){ c.permit = true; c.inZone = true; if (c.zone.count === 0) c.zone.since = this.t; c.zone.count++; }
+      }
+      if (c.inZone && c.s > c.a1 + 2.5){ c.inZone = false; c.zone.count--; this.uDone[c.dir]++; }
+    }
+    this.cars = cars.filter(c => {
+      if (c.s >= c.P.len - 0.6){
+        if (c.inZone) c.zone.count--;
+        if (c.kind === 't' && !c.gaveUp){ this.thrDone++; this.thrTT += this.t - c.born; }
+        else if (c.onU){ this.uOut++; this.uTT += this.t - c.born; }
+        return false;
+      }
+      return true;
+    });
+    for (const dir of ['EB', 'WB']) for (let k = 0; k < 3; k++){
+      let crossing = false;
+      for (const zk in this.S.zones){ const zn = this.S.zones[zk]; if (zn.count > 0 && zn.dir === dir && zn.lanes.includes(k)) crossing = true; }
+      if (crossing) this.blk[dir][k] += dt;
+      else if (k < 2 && this.mergeWait(dir, k)) this.blkM[dir][k] += dt;
+    }
+  }
+  metrics(){
+    const h = this.el / 3600 || 1e-9;
+    return {
+      minutes: this.el / 60,
+      thrPerHour: this.thrDone / h,
+      uPerHour: (this.uDone.EB + this.uDone.WB) / h,
+      thrDelay: this.thrDone ? this.thrTT / this.thrDone - FREE_TT : 0,
+      uTime: this.uOut ? this.uTT / this.uOut : 0,
+      queue: this.queued('EB') + this.queued('WB'),
+      unserved: this.src.reduce((a, q) => a + q.pend, 0),
+      missedPerHour: this.missed / h,
+    };
+  }
+}
+// SIM-END
+
+/* ---------------- 3D world ---------------- */
+const COL = { eb: 0xe8920c, wb: 0x0f9d95, stop: 0xd63f31, go: 0x2b9a57 };
+const THR_COLS = [0xeef0f2, 0xc3c9ce, 0x8c959c, 0x5b6670, 0x2e3843, 0x9db3c7, 0xcdc4b2, 0x46566b, 0x1f2328];
+
+const bodyG = new THREE.BoxGeometry(4.3, 0.9, 1.8); bodyG.translate(0, 0.75, 0);
+const cabG = new THREE.BoxGeometry(2.2, 0.72, 1.62); cabG.translate(-0.3, 1.55, 0);
+const indG = new THREE.BoxGeometry(0.35, 0.3, 0.2);
+const glassMat = new THREE.MeshStandardMaterial({ color: 0x23313b, roughness: .3, metalness: .3 });
+const indMat = new THREE.MeshBasicMaterial({ color: 0xffb300 });
+
+function makeCar(c){
+  const g = new THREE.Group();
+  const color = c.kind === 'u' ? (c.dir === 'EB' ? COL.eb : COL.wb) : THR_COLS[Math.floor(c.tint * THR_COLS.length)];
+  const m = new THREE.MeshStandardMaterial({ color, roughness: .5, metalness: .15 });
+  const b = new THREE.Mesh(bodyG, m), k = new THREE.Mesh(cabG, glassMat);
+  b.castShadow = k.castShadow = true; g.add(b, k);
+  for (const side of ['R', 'L']){
+    const ind = new THREE.Group(), z = side === 'R' ? 0.85 : -0.85;
+    const f = new THREE.Mesh(indG, indMat); f.position.set(2.1, 0.85, z);
+    const r = new THREE.Mesh(indG, indMat); r.position.set(-2.1, 0.85, z);
+    ind.add(f, r); ind.visible = false; g.add(ind); g.userData['ind' + side] = ind;
+  }
+  g.userData.mat = m; g.userData.kind = c.kind;
+  return g;
+}
+
+function flat(w, d, mat){ const g = new THREE.PlaneGeometry(w, d); g.rotateX(-Math.PI / 2); return new THREE.Mesh(g, mat); }
+
+function textCanvas(text, { px = 44, color = '#1a1f1c', bg = 'rgba(255,255,255,.92)', weight = 600, pad = 22, border = null } = {}){
+  const c = document.createElement('canvas'), ctx = c.getContext('2d');
+  const font = `${weight} ${px}px "Anuphan","IBM Plex Sans Thai",sans-serif`;
+  ctx.font = font; const w = Math.ceil(ctx.measureText(text).width + pad * 2), h = Math.ceil(px * 1.7);
+  c.width = w; c.height = h; ctx.font = font;
+  if (bg){ ctx.fillStyle = bg; const r = 12; ctx.beginPath(); ctx.roundRect(2, 2, w - 4, h - 4, r); ctx.fill(); if (border){ ctx.lineWidth = 4; ctx.strokeStyle = border; ctx.stroke(); } }
+  ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, w / 2, h / 2 + px * 0.05);
+  return c;
+}
+function label(text, size, opts){
+  const c = textCanvas(text, opts), tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false, transparent: true }));
+  sp.scale.set(size * c.width / c.height, size, 1); sp.renderOrder = 10; return sp;
+}
+function paint(text, h, color = 'rgba(245,245,238,.92)'){
+  const c = textCanvas(text, { px: 64, color, bg: null, weight: 700, pad: 10 });
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+  const m = flat(h * c.width / c.height, h, new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
+  return m;
+}
+function hatchTexture(){
+  const c = document.createElement('canvas'); c.width = 128; c.height = 64; const x = c.getContext('2d');
+  x.strokeStyle = '#e0392b'; x.lineWidth = 5;
+  for (let i = -64; i < 192; i += 18){ x.beginPath(); x.moveTo(i, 0); x.lineTo(i + 64, 64); x.stroke(); x.beginPath(); x.moveTo(i + 64, 0); x.lineTo(i, 64); x.stroke(); }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+function islandShape(mirror){
+  const pts = [[-XMAX - 15, -4], [-80, -4]];
+  for (let i = 1; i <= 20; i++){ const t = i / 20, e = (1 - Math.cos(Math.PI * t)) / 2; pts.push([-80 + 18 * t, -4 + 4 * e]); }
+  pts.push([-19, 0]);
+  for (let i = 1; i < 16; i++){ const p = Math.PI * i / 16; pts.push([-19 + 2 * Math.sin(p), 2 - 2 * Math.cos(p)]); }
+  pts.push([-19, 4], [-XMAX - 15, 4]);
+  const P = mirror ? pts.map(([x, z]) => [-x, -z]) : pts;
+  return new THREE.Shape(P.map(([x, z]) => new THREE.Vector2(x, -z)));
+}
+function dashes(path, s0, s1, color, gapStep = 1.5){
+  const n = Math.floor((s1 - s0) / gapStep);
+  const g = new THREE.PlaneGeometry(0.9, 0.32); g.rotateX(-Math.PI / 2);
+  const im = new THREE.InstancedMesh(g, new THREE.MeshBasicMaterial({ color, transparent: true, opacity: .95, depthWrite: false }), n);
+  const o = {}, m = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0, 1, 0), sc = new THREE.Vector3(1, 1, 1);
+  for (let i = 0; i < n; i++){
+    sampleP(path, s0 + i * gapStep, o);
+    q.setFromAxisAngle(up, Math.atan2(-o.hz, o.hx));
+    m.compose(new THREE.Vector3(o.x, 0.06, o.z), q, sc); im.setMatrixAt(i, m);
+  }
+  im.renderOrder = 2; return im;
+}
+
+class World {
+  constructor(sim){
+    this.sim = sim; const S = sim.S, type = sim.type;
+    const scene = this.scene = new THREE.Scene();
+    scene.add(new THREE.HemisphereLight(0xeef4ff, 0x5a5f4a, 1.15));
+    const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(70, 140, 60);
+    sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+    Object.assign(sun.shadow.camera, { left: -200, right: 200, top: 90, bottom: -90, near: 10, far: 400 });
+    scene.add(sun);
+
+    const ground = flat(1400, 900, new THREE.MeshStandardMaterial({ color: 0x8e9a82, roughness: 1 }));
+    ground.position.y = -0.05; ground.receiveShadow = true; scene.add(ground);
+    const road = flat(2 * XMAX + 30, 29, new THREE.MeshStandardMaterial({ color: 0x43484c, roughness: .95 }));
+    road.receiveShadow = true; scene.add(road);
+    const walkMat = new THREE.MeshStandardMaterial({ color: 0xc4c0b6, roughness: 1 });
+    for (const s of [-1, 1]){ const w = new THREE.Mesh(new THREE.BoxGeometry(2 * XMAX + 30, 0.25, 5), walkMat); w.position.set(0, 0.12, s * 17); w.receiveShadow = true; scene.add(w); }
+
+    // median islands
+    const grass = new THREE.MeshStandardMaterial({ color: 0x6f9a5c, roughness: 1 });
+    const curb = new THREE.MeshStandardMaterial({ color: 0xdedbd2, roughness: .9 });
+    for (const mir of [false, true]){
+      const g = new THREE.ExtrudeGeometry(islandShape(mir), { depth: 0.24, bevelEnabled: false }); g.rotateX(-Math.PI / 2);
+      const isl = new THREE.Mesh(g, [grass, curb]); isl.receiveShadow = true; isl.castShadow = true; scene.add(isl);
+    }
+    // trees on the full-width part of the islands
+    const trunkG = new THREE.CylinderGeometry(0.18, 0.22, 2.2, 6), crownG = new THREE.IcosahedronGeometry(1.6, 0);
+    const trunkM = new THREE.MeshStandardMaterial({ color: 0x6b4f35 }), crownM = new THREE.MeshStandardMaterial({ color: 0x3f7a3a, flatShading: true });
+    for (let x = -XMAX + 10; x < -95; x += 16) for (const s of [1, -1]){
+      const t = new THREE.Group(), a = new THREE.Mesh(trunkG, trunkM), b = new THREE.Mesh(crownG, crownM);
+      a.position.y = 1.3; b.position.y = 3.2; a.castShadow = b.castShadow = true; t.add(a, b); t.position.set(s * x, 0.24, 0); scene.add(t);
+    }
+
+    // lane markings
+    const white = new THREE.MeshBasicMaterial({ color: 0xf2f2ec });
+    const dashG = new THREE.PlaneGeometry(3, 0.15); dashG.rotateX(-Math.PI / 2);
+    const lines = [-11, -7.5, 7.5, 11], per = Math.floor(2 * XMAX / 9);
+    const dm = new THREE.InstancedMesh(dashG, white, lines.length * per), mm = new THREE.Matrix4(); let di = 0;
+    for (const z of lines) for (let i = 0; i < per; i++){ mm.makeTranslation(-XMAX + i * 9, 0.02, z); dm.setMatrixAt(di++, mm); }
+    scene.add(dm);
+    for (const z of [-14.3, 14.3]){ const e = flat(2 * XMAX, 0.18, white); e.position.set(0, 0.02, z); scene.add(e); }
+    // painted direction arrows
+    const ar = new THREE.Shape([[-1.8, -0.18], [0.3, -0.18], [0.3, -0.6], [1.7, 0], [0.3, 0.6], [0.3, 0.18], [-1.8, 0.18]].map(([x, y]) => new THREE.Vector2(x, y)));
+    const arG = new THREE.ShapeGeometry(ar); arG.rotateX(-Math.PI / 2);
+    for (const dir of ['EB', 'WB']) for (const k of [0, 1, 2]) for (const x of [-190, -120, 120, 190]){
+      const a = new THREE.Mesh(arG, white); a.position.set(x, 0.025, Z[dir][k]); if (dir === 'WB') a.rotation.y = Math.PI; scene.add(a);
+    }
+
+    // conflict-zone patches (light up when a U-turn is crossing)
+    this.patches = [];
+    for (const zk of ['EB', 'WB']){
+      const zn = S.zones[zk];
+      for (const k of zn.lanes){
+        const p = flat(zn.xmax - zn.xmin, 3.2, new THREE.MeshBasicMaterial({ color: COL.stop, transparent: true, opacity: .1, depthWrite: false }));
+        p.position.set((zn.xmin + zn.xmax) / 2, 0.035, Z[zn.dir][k]); p.renderOrder = 1; scene.add(p);
+        this.patches.push({ p, zn });
+      }
+    }
+    // U-turn paths
+    for (const dir of ['EB', 'WB']){
+      const P = S.u[dir];
+      scene.add(dashes(P, P.marks.a0 - 30, P.marks.a1 + 26, dir === 'EB' ? COL.eb : COL.wb));
+    }
+
+    // type-specific furniture and labels
+    if (type === 1){
+      const l1 = label('ช่องเบี่ยงรอกลับรถ', 2.6); l1.position.set(-42, 5, -2); scene.add(l1);
+      const l2 = label('ช่องเบี่ยงรอกลับรถ', 2.6); l2.position.set(42, 5, 2); scene.add(l2);
+      const l3 = label('กวาดถึงเลนซ้ายสุด', 2.4, { color: '#fff', bg: 'rgba(214,63,49,.92)' }); l3.position.set(-24, 4.5, 12.75); scene.add(l3);
+      const l4 = label('กวาดถึงเลนซ้ายสุด', 2.4, { color: '#fff', bg: 'rgba(214,63,49,.92)' }); l4.position.set(24, 4.5, -12.75); scene.add(l4);
+    } else {
+      const hatch = hatchTexture(); hatch.repeat.set(8, 1);
+      const barrierG = new THREE.BoxGeometry(1.9, 0.85, 0.55);
+      const red = new THREE.MeshStandardMaterial({ color: 0xd63a2a }), wht = new THREE.MeshStandardMaterial({ color: 0xf1f1ee });
+      for (const s of [1, -1]){
+        const h = flat(58, 3.6, new THREE.MeshBasicMaterial({ map: hatch, transparent: true, depthWrite: false }));
+        h.position.set(s * -48, 0.04, s * -2); scene.add(h);
+        let i = 0;
+        for (let x = 78; x >= 20; x -= 2.4){
+          const b = new THREE.Mesh(barrierG, i++ % 2 ? wht : red); b.position.set(s * -x, 0.43, s * -3.85); b.castShadow = true; scene.add(b);
+        }
+        const t = paint('U-TURN', 1.8); t.position.set(s * -60, 0.03, s * -5.75); if (s < 0) t.rotation.y = Math.PI; scene.add(t);
+        const g = flat(110, 3.2, new THREE.MeshBasicMaterial({ color: COL.go, transparent: true, opacity: .32, depthWrite: false }));
+        g.position.set(0, 0.035, s * -12.75); g.renderOrder = 1; scene.add(g);
+      }
+      const l1 = label('ปิดช่องเบี่ยง', 2.6, { color: '#fff', bg: 'rgba(214,63,49,.92)' }); l1.position.set(-48, 5, -2); scene.add(l1);
+      const l2 = label('ปิดช่องเบี่ยง', 2.6, { color: '#fff', bg: 'rgba(214,63,49,.92)' }); l2.position.set(48, 5, 2); scene.add(l2);
+      const l3 = label('เลนซ้ายวิ่งได้ตลอด', 2.4, { color: '#fff', bg: 'rgba(43,154,87,.94)' }); l3.position.set(0, 4.5, -12.75); scene.add(l3);
+      const l4 = label('เลนซ้ายวิ่งได้ตลอด', 2.4, { color: '#fff', bg: 'rgba(43,154,87,.94)' }); l4.position.set(0, 4.5, 12.75); scene.add(l4);
+      const l5 = label('รอในเลนขวา', 2.2); l5.position.set(-90, 4.5, -5.75); scene.add(l5);
+      const l6 = label('รอในเลนขวา', 2.2); l6.position.set(90, 4.5, 5.75); scene.add(l6);
+    }
+
+    // buildings and direction signs
+    const bm1 = new THREE.MeshStandardMaterial({ color: 0xd8d2c4 }), bm2 = new THREE.MeshStandardMaterial({ color: 0xe1dfdb });
+    const hp = new THREE.Mesh(new THREE.BoxGeometry(110, 13, 34), bm1); hp.position.set(-5, 6.5, -48); hp.castShadow = hp.receiveShadow = true; scene.add(hp);
+    const rb = new THREE.Mesh(new THREE.BoxGeometry(130, 9, 36), bm2); rb.position.set(10, 4.5, 62); rb.castShadow = rb.receiveShadow = true; scene.add(rb);
+    const s1 = label('โฮมโปร', 4.2, { bg: 'rgba(255,255,255,.95)', border: '#1a1f1c' }); s1.position.set(-5, 18, -40); scene.add(s1);
+    const s2 = label('โรบินสัน', 4.2, { bg: 'rgba(255,255,255,.95)', border: '#1a1f1c' }); s2.position.set(10, 13, 48); scene.add(s2);
+    const d1 = label('ไปทางตะวันออก →', 2.4, { bg: 'rgba(242,183,5,.95)' }); d1.position.set(-150, 4, -9.25); scene.add(d1);
+    const d2 = label('← ไปทางตะวันตก', 2.4, { bg: 'rgba(242,183,5,.95)' }); d2.position.set(150, 4, 9.25); scene.add(d2);
+
+    this.meshes = new Map();
+  }
+  sync(time){
+    const alive = new Set(), blink = (time % 0.8) < 0.45;
+    for (const c of this.sim.cars){
+      alive.add(c.id);
+      let m = this.meshes.get(c.id);
+      if (m && m.userData.kind !== c.kind){ this.scene.remove(m); m.userData.mat.dispose(); m = null; }   // a U-turn car that gave up turns grey
+      if (!m){ m = makeCar(c); this.scene.add(m); this.meshes.set(c.id, m); }
+      m.position.set(c.x, 0, c.z);
+      const vx = c.hx * Math.max(c.v, 0.5), vz = c.hz * Math.max(c.v, 0.5) + c.latV;   // lean into the lane change
+      m.rotation.y = Math.atan2(-vz, vx);
+      m.userData.indR.visible = blink && c.sig === 'R';
+      m.userData.indL.visible = blink && c.sig === 'L';
+    }
+    for (const [id, m] of this.meshes) if (!alive.has(id)){ this.scene.remove(m); m.userData.mat.dispose(); this.meshes.delete(id); }
+    for (const { p, zn } of this.patches){
+      const target = zn.count > 0 ? .62 : .1;
+      p.material.opacity += (target - p.material.opacity) * 0.25;
+    }
+  }
+}
+
+/* ---------------- app ---------------- */
+const sims = { 1: new Sim(1, 20261009), 2: new Sim(2, 20261009) };
+const stage = document.getElementById('stage'), canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setClearColor(0x000000, 0);
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const camera = new THREE.PerspectiveCamera(45, 2, 1, 2500);
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.maxPolarAngle = 1.48; controls.minDistance = 12; controls.maxDistance = 520;
+
+let worlds = null;
+let mode = 'split', cam = 'ob', speed = 1, running = true, tween = null;
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function viewAspect(){
+  const w = stage.clientWidth, h = stage.clientHeight;
+  return mode === 'split' ? w / (h / 2) : w / h;
+}
+function preset(name, instant){
+  cam = name;
+  const asp = viewAspect(), tanH = Math.tan(THREE.MathUtils.degToRad(22.5));
+  let pos, tgt;
+  if (name === 'top'){
+    const d = Math.max(95 / (tanH * asp), 34 / tanH);
+    pos = new THREE.Vector3(0, d, 0.01); tgt = new THREE.Vector3(0, 0, 0);
+  } else if (name === 'near'){
+    const k = asp < 1.4 ? 1.6 : 1;
+    pos = new THREE.Vector3(-34 * k, 24 * k, 38 * k); tgt = new THREE.Vector3(-4, 0, 2);
+  } else {
+    const k = asp < 1.4 ? 1.7 : asp > 3 ? 0.85 : 1;
+    pos = new THREE.Vector3(-30 * k, 52 * k, 58 * k); tgt = new THREE.Vector3(0, 0, 2);
+  }
+  if (instant || reduce){ camera.position.copy(pos); controls.target.copy(tgt); tween = null; }
+  else tween = { p0: camera.position.clone(), t0: controls.target.clone(), p1: pos, t1: tgt, start: performance.now(), dur: 900 };
+  for (const [id, n] of [['cOb', 'ob'], ['cTop', 'top'], ['cNear', 'near']]) document.getElementById(id).setAttribute('aria-pressed', String(cam === n));
+}
+function setMode(m){
+  mode = m;
+  for (const [id, n] of [['m1', '1'], ['m2', '2'], ['ms', 'split']]) document.getElementById(id).setAttribute('aria-pressed', String(mode === n));
+  const l1 = document.getElementById('lab1'), l2 = document.getElementById('lab2');
+  l1.hidden = mode === '2'; l2.hidden = mode === '1';
+  l2.style.top = mode === 'split' ? 'calc(50% + 10px)' : '10px';
+  document.getElementById('splitLine').hidden = mode !== 'split';
+  preset(cam, true);
+}
+function resize(){
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(w, h, false);
+}
+new ResizeObserver(() => { resize(); }).observe(stage);
+
+function render(){
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setScissorTest(true);
+  if (mode === 'split'){
+    const hh = Math.floor(h / 2);
+    camera.aspect = w / hh; camera.updateProjectionMatrix();
+    renderer.setViewport(0, h - hh, w, hh); renderer.setScissor(0, h - hh, w, hh); renderer.render(worlds[1].scene, camera);
+    camera.aspect = w / (h - hh); camera.updateProjectionMatrix();
+    renderer.setViewport(0, 0, w, h - hh); renderer.setScissor(0, 0, w, h - hh); renderer.render(worlds[2].scene, camera);
+  } else {
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+    renderer.setViewport(0, 0, w, h); renderer.setScissor(0, 0, w, h); renderer.render(worlds[mode].scene, camera);
+  }
+}
+
+let last = performance.now(), accT = 0, simTime = 0;
+function loop(now){
+  const dt = Math.min(0.1, (now - last) / 1000); last = now;
+  if (running){
+    accT = Math.min(accT + dt * speed, 0.6);
+    while (accT >= 0.05){ sims[1].step(0.05); sims[2].step(0.05); accT -= 0.05; simTime += 0.05; }
+  }
+  if (tween){
+    const k = Math.min(1, (now - tween.start) / tween.dur), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+    camera.position.lerpVectors(tween.p0, tween.p1, e); controls.target.lerpVectors(tween.t0, tween.t1, e);
+    if (k >= 1) tween = null;
+  }
+  controls.update();
+  worlds[1].sync(simTime); worlds[2].sync(simTime);
+  render();
+  requestAnimationFrame(loop);
+}
+
+/* ---------------- lane boards ---------------- */
+const LANES = [
+  { dir: 'EB', k: 0, name: 'เลนซ้ายสุด', sub: 'ชิดฝั่งโฮมโปร' },
+  { dir: 'EB', k: 1, name: 'เลนกลาง', sub: '' },
+  { dir: 'EB', k: 2, name: 'เลนขวา', sub: 'ชิดเกาะกลาง' },
+  { median: true },
+  { dir: 'WB', k: 2, name: 'เลนขวา', sub: 'ชิดเกาะกลาง' },
+  { dir: 'WB', k: 1, name: 'เลนกลาง', sub: '' },
+  { dir: 'WB', k: 0, name: 'เลนซ้ายสุด', sub: 'ชิดฝั่งโรบินสัน' },
+];
+const boards = document.getElementById('boards'), cells = { 1: {}, 2: {} };
+for (const t of [1, 2]){
+  const b = document.createElement('div'); b.className = 'board';
+  b.innerHTML = `<header><span class="tag">Type ${t}</span><h3>${t === 1 ? 'ปัจจุบัน · มีช่องเบี่ยง' : 'ข้อเสนอ · ปิดช่องเบี่ยง'}</h3></header>`;
+  for (const L of LANES){
+    if (L.median){ b.insertAdjacentHTML('beforeend', '<div class="median">เกาะกลาง · จุดกลับรถ</div>'); continue; }
+    if (L.k === (L.dir === 'EB' ? 0 : 2)) b.insertAdjacentHTML('beforeend', `<div class="dirlabel">${L.dir === 'EB' ? 'ขาไปทางตะวันออก →' : '← ขาไปทางตะวันตก'}</div>`);
+    const row = document.createElement('div'); row.className = 'lane';
+    row.innerHTML = `<span class="lname">${L.name}${L.sub ? `<small>${L.sub}</small>` : ''}</span><span class="pill" data-s="go">วิ่งได้</span><span class="pct"><span class="bar"><i></i><i class="bm"></i></span><b>0%</b></span>`;
+    b.appendChild(row);
+    cells[t][L.dir + L.k] = { pill: row.querySelector('.pill'), bar: row.querySelector('.bar i'), barM: row.querySelector('.bar i.bm'), pct: row.querySelector('.pct b') };
+  }
+  b.insertAdjacentHTML('beforeend', `<footer><span>รอกลับรถฝั่งบน <b data-q="EB">0</b> คัน</span><span>รอกลับรถฝั่งล่าง <b data-q="WB">0</b> คัน</span><span>กลับรถแล้ว <b data-q="done">0</b> คัน</span></footer>`);
+  cells[t].foot = b.querySelector('footer');
+  b.insertAdjacentHTML('beforeend', '<p class="note">แถบแดง = หยุดให้รถกลับรถตัดผ่าน · แถบส้ม = ติดรถที่จอดรอแทรกเข้าเลนข้าง ๆ</p>');
+  boards.appendChild(b);
+}
+function setPill(el, s, text){ if (el.dataset.s !== s) el.dataset.s = s; if (el.textContent !== text) el.textContent = text; }
+function updateBoards(){
+  for (const t of [1, 2]){
+    const sim = sims[t], S = sim.S;
+    for (const L of LANES){
+      if (L.median) continue;
+      const c = cells[t][L.dir + L.k];
+      const zn = L.dir === 'WB' ? S.zones.EB : S.zones.WB;     // the zone where the other direction's U-turn crosses this lane
+      const crossing = zn.count > 0 && zn.lanes.includes(L.k);
+      const pct = sim.el > 0 ? Math.round(100 * sim.blk[L.dir][L.k] / sim.el) : 0;
+      const pm = sim.el > 0 ? Math.round(100 * sim.blkM[L.dir][L.k] / sim.el) : 0;
+      if (t === 2 && L.k === 2){ setPill(c.pill, 'queue', 'เลนรอกลับรถ'); c.bar.style.width = '0%'; c.barM.style.width = '0%'; c.pct.textContent = '–'; continue; }
+      if (crossing) setPill(c.pill, 'stop', 'หยุดให้รถกลับรถ');
+      else if (L.k < 2 && sim.mergeWait(L.dir, L.k)) setPill(c.pill, 'spill', 'มีรถจอดรอแทรก');
+      else if (t === 1 && L.k === 2 && sim.spill(L.dir)) setPill(c.pill, 'spill', 'คิวล้นช่องเบี่ยง');
+      else setPill(c.pill, 'go', 'วิ่งได้');
+      c.bar.style.width = pct + '%'; c.barM.style.width = pm + '%'; c.pct.textContent = (pct + pm) + '%';
+    }
+    const f = cells[t].foot;
+    f.querySelector('[data-q="EB"]').textContent = sim.queued('EB');
+    f.querySelector('[data-q="WB"]').textContent = sim.queued('WB');
+    f.querySelector('[data-q="done"]').textContent = sim.uDone.EB + sim.uDone.WB;
+  }
+}
+setInterval(updateBoards, 300);
+
+/* ---------------- 2D turning-circle diagrams ---------------- */
+function diagram(type){
+  const Y = z => 130 + z * 7.3, W = 340;
+  const zs = type === 1 ? -2 : -5.75, ze = type === 1 ? 12.75 : 9.25, R = (ze - zs) / 2 * 7.3, x0 = 120;
+  const col = 'var(--eb)';
+  let s = `<svg viewBox="0 0 ${W} 262" role="img" aria-label="ภาพวงเลี้ยว Type ${type}">`;
+  s += `<defs><marker id="ah${type}" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="${col}"/></marker></defs>`;
+  s += `<rect class="asph" x="0" y="${Y(-14.5)}" width="${W}" height="${Y(14.5) - Y(-14.5)}"/>`;
+  // median: island on the left part only, the U-turn opening on the right
+  if (type === 1){
+    s += `<rect class="isl" x="0" y="${Y(0)}" width="${x0 - 6}" height="${Y(4) - Y(0)}" rx="3"/>`;
+    s += `<rect class="isl" x="0" y="${Y(-4)}" width="18" height="${Y(0) - Y(-4)}"/>`;
+  } else {
+    s += `<rect class="isl" x="0" y="${Y(-4)}" width="${x0 - 6}" height="${Y(4) - Y(-4)}" rx="3"/>`;
+    s += `<pattern id="hx" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M0 0L8 8M8 0L0 8" stroke="#e0392b" stroke-width="1.4"/></pattern>`;
+    s += `<rect x="18" y="${Y(-4)}" width="${x0 - 24}" height="${Y(0) - Y(-4)}" fill="url(#hx)"/>`;
+  }
+  for (const z of [-11, -7.5, 7.5, 11]) s += `<line class="lnl d" x1="0" x2="${W}" y1="${Y(z)}" y2="${Y(z)}"/>`;
+  for (const z of [-14.3, 14.3]) s += `<line class="lnl" x1="0" x2="${W}" y1="${Y(z)}" y2="${Y(z)}"/>`;
+  // end-lane highlight
+  const hl = type === 1 ? 'var(--stop)' : 'var(--go)';
+  s += `<rect x="0" y="${Y(11)}" width="${W}" height="${Y(14.5) - Y(11)}" fill="${hl}" opacity=".45"/>`;
+  s += `<text class="tw" x="${W - 8}" y="${Y(12.75) + 4}" text-anchor="end">${type === 1 ? 'เลนซ้ายสุด ถูกตัด' : 'เลนซ้ายสุด ว่าง'}</text>`;
+  // queued cars
+  for (let i = 0; i < 4; i++) s += `<rect x="${x0 - 24 - i * 24}" y="${Y(zs) - 6}" width="18" height="12" rx="2" fill="${col}"/>`;
+  // turning path
+  s += `<path d="M${x0 - 6} ${Y(zs)} L${x0} ${Y(zs)} A${R} ${R} 0 0 1 ${x0} ${Y(ze)} L${x0 - 70} ${Y(ze)}" fill="none" stroke="${col}" stroke-width="3" marker-end="url(#ah${type})"/>`;
+  // diameter dimension
+  const dx = x0 + R + 26;
+  s += `<line class="dim" x1="${dx}" x2="${dx}" y1="${Y(zs)}" y2="${Y(ze)}"/><line class="dim" x1="${dx - 5}" x2="${dx + 5}" y1="${Y(zs)}" y2="${Y(zs)}"/><line class="dim" x1="${dx - 5}" x2="${dx + 5}" y1="${Y(ze)}" y2="${Y(ze)}"/>`;
+  s += `<rect x="${dx + 6}" y="${(Y(zs) + Y(ze)) / 2 - 10}" width="92" height="20" rx="4" fill="var(--panel)"/>`;
+  s += `<text class="t" x="${dx + 12}" y="${(Y(zs) + Y(ze)) / 2 + 4}">วงเลี้ยว ≈ 15 ม.</text>`;
+  s += `<text class="tw" x="6" y="${Y(-12.75) + 4}">ขาไปตะวันออก →</text>`;
+  s += `<text class="tw" x="${W - 8}" y="${Y(5.75) + 4}" text-anchor="end">← ขาไปตะวันตก</text>`;
+  s += `<text class="t" x="0" y="14">${type === 1 ? 'เริ่มเลี้ยวจากช่องเบี่ยงในเกาะกลาง' : 'เริ่มเลี้ยวจากเลนขวาของทางหลัก (ช่องเบี่ยงปิด)'}</text>`;
+  s += `<text class="t" x="0" y="256">${type === 1 ? 'ฝั่งตรงข้ามต้องหยุด 3 เลน' : 'ฝั่งตรงข้ามหยุด 2 เลน · เลนซ้ายสุดวิ่งต่อได้'}</text>`;
+  return s + '</svg>';
+}
+document.getElementById('d1').innerHTML = diagram(1);
+document.getElementById('d2').innerHTML = diagram(2);
+
+/* ---------------- controls ---------------- */
+document.getElementById('m1').onclick = () => setMode('1');
+document.getElementById('m2').onclick = () => setMode('2');
+document.getElementById('ms').onclick = () => setMode('split');
+document.getElementById('cOb').onclick = () => preset('ob');
+document.getElementById('cTop').onclick = () => preset('top');
+document.getElementById('cNear').onclick = () => preset('near');
+const playBtn = document.getElementById('play');
+playBtn.onclick = () => { running = !running; playBtn.textContent = running ? 'หยุดชั่วคราว' : 'เล่นต่อ'; };
+for (const v of [1, 2, 4]) document.getElementById('sp' + v).onclick = () => {
+  speed = v; for (const u of [1, 2, 4]) document.getElementById('sp' + u).setAttribute('aria-pressed', String(u === v));
+};
+const dem = document.getElementById('dem'), demOut = document.getElementById('demOut');
+const thrIn = document.getElementById('thr'), thrOut = document.getElementById('thrOut'), lcIn = document.getElementById('lc');
+function settings(sim){ sim.uDemand = +dem.value; sim.thrDemand = +thrIn.value; sim.lc = lcIn.checked; }
+dem.oninput = () => { demOut.textContent = dem.value; for (const t of [1, 2]){ settings(sims[t]); sims[t].resetStats(); } evalResult = null; };
+thrIn.oninput = () => { thrOut.textContent = thrIn.value; for (const t of [1, 2]){ settings(sims[t]); sims[t].resetStats(); } evalResult = null; };
+lcIn.onchange = () => { for (const t of [1, 2]){ settings(sims[t]); sims[t].reset(); } evalResult = null; };
+document.getElementById('reset').onclick = () => { sims[1].reset(); sims[2].reset(); simTime = 0; evalResult = null; };
+
+/* ---------------- throughput evaluation ---------------- */
+const METRICS = [
+  { key: 'thrPerHour', title: 'รถทางตรงผ่านได้', unit: 'คัน/ชม.', better: 'high', fmt: v => Math.round(v).toLocaleString('th-TH'), hint: 'รวมสองทิศทาง' },
+  { key: 'uPerHour', title: 'รถกลับรถได้สำเร็จ', unit: 'คัน/ชม.', better: 'high', fmt: v => Math.round(v).toLocaleString('th-TH'), hint: 'รวมสองทิศทาง' },
+  { key: 'thrDelay', title: 'รถทางตรงเสียเวลาเพิ่ม', unit: 'วินาที/คัน', better: 'low', fmt: v => v.toFixed(1), hint: 'เทียบกับวิ่งโล่ง ๆ' },
+  { key: 'uTime', title: 'เวลาเดินทางของรถกลับรถ', unit: 'วินาที/คัน', better: 'low', fmt: v => Math.round(v), hint: 'ตั้งแต่เข้ามาจนออกจากช่วงถนน' },
+  { key: 'missedPerHour', title: 'รถกลับรถที่แทรกไม่ได้ ต้องวิ่งเลย', unit: 'คัน/ชม.', better: 'low', fmt: v => Math.round(v), hint: 'ต้องไปหาที่กลับรถจุดอื่น' },
+  { key: 'queue', title: 'รถรอกลับรถตอนนี้', unit: 'คัน', better: 'low', fmt: v => Math.round(v), hint: 'ยิ่งมากคิวยิ่งยาว' },
+];
+const evgrid = document.getElementById('evgrid'), mcells = {};
+for (const M of METRICS){
+  const d = document.createElement('div'); d.className = 'metric';
+  d.innerHTML = `<h3>${M.title}</h3><span class="hint2">${M.unit} · ${M.hint} · ${M.better === 'high' ? 'ยิ่งมากยิ่งดี' : 'ยิ่งน้อยยิ่งดี'}</span>` +
+    [1, 2].map(t => `<div class="mrow t${t}"><span>Type ${t}</span><span class="mb"><i></i></span><b>–</b></div>`).join('');
+  evgrid.appendChild(d);
+  mcells[M.key] = [1, 2].map(t => ({ row: d.querySelector('.t' + t), bar: d.querySelector(`.t${t} i`), val: d.querySelector(`.t${t} b`) }));
+}
+let evalResult = null;
+function renderMetrics(m, label){
+  for (const M of METRICS){
+    const a = m[1][M.key], b = m[2][M.key], mx = Math.max(a, b, 1e-9);
+    const win = Math.abs(a - b) / mx < 0.03 ? 0 : (M.better === 'high') === (a > b) ? 1 : 2;
+    mcells[M.key].forEach((c, i) => {
+      const v = i ? b : a;
+      c.bar.style.width = (100 * v / mx).toFixed(1) + '%';
+      c.val.textContent = M.fmt(v) + (win === i + 1 ? ' ✓' : '');
+      c.val.className = win === i + 1 ? 'win' : '';
+    });
+  }
+  const t1 = m[1].thrPerHour + m[1].uPerHour, t2 = m[2].thrPerHour + m[2].uPerHour, diff = (t2 - t1) / Math.max(t1, 1) * 100;
+  const dd = m[1].thrDelay - m[2].thrDelay;
+  const flow = Math.abs(diff) < 2 ? 'ทั้งสองแบบให้รถผ่านได้ใกล้เคียงกัน' : diff > 0 ? `Type 2 ให้รถผ่านได้มากกว่า ${diff.toFixed(0)}%` : `Type 1 ให้รถผ่านได้มากกว่า ${(-diff).toFixed(0)}%`;
+  const delay = Math.abs(dd) < 1 ? 'รถทางตรงเสียเวลาพอ ๆ กัน' : dd > 0 ? `รถทางตรงใน Type 2 เสียเวลาน้อยกว่า ${dd.toFixed(1)} วินาที/คัน` : `รถทางตรงใน Type 1 เสียเวลาน้อยกว่า ${(-dd).toFixed(1)} วินาที/คัน`;
+  document.getElementById('verdict').textContent = `${label}: ${flow} (นับรวมรถทางตรงและรถกลับรถ) และ${delay}`;
+}
+function liveMetrics(){
+  if (evalResult) return;
+  if (!evalBtn.disabled) evalNote.textContent = 'ตัวเลขด้านล่างนับสดจากแบบจำลองที่กำลังเล่น';
+  const m = { 1: sims[1].metrics(), 2: sims[2].metrics() };
+  if (m[1].minutes < 1){ document.getElementById('verdict').textContent = 'กำลังเก็บข้อมูล… รอสักครู่ หรือกด "ประเมินเร็ว 20 นาที"'; return; }
+  renderMetrics(m, `จากการเล่นสด ${m[1].minutes.toFixed(0)} นาทีจำลอง`);
+}
+setInterval(liveMetrics, 1000);
+const evalBtn = document.getElementById('evalBtn'), evalNote = document.getElementById('evalNote');
+evalBtn.onclick = () => {
+  evalBtn.disabled = true;
+  const runs = { 1: new Sim(1, 777), 2: new Sim(2, 777) };
+  for (const t of [1, 2]){ settings(runs[t]); runs[t].reset(); }
+  const WARM = 1200, TOTAL = 24000; let i = 0;
+  const chunk = () => {
+    const end = Math.min(i + 400, WARM + TOTAL);
+    for (; i < end; i++){
+      runs[1].step(0.05); runs[2].step(0.05);
+      if (i === WARM - 1){ runs[1].resetStats(); runs[2].resetStats(); }
+    }
+    evalNote.textContent = `กำลังประเมิน… ${Math.round(100 * i / (WARM + TOTAL))}%`;
+    if (i < WARM + TOTAL) setTimeout(chunk, 0);
+    else {
+      evalResult = { 1: runs[1].metrics(), 2: runs[2].metrics() };
+      renderMetrics(evalResult, `ผลประเมิน 20 นาที (กลับรถ ${dem.value} คัน/นาที/ฝั่ง, ทางตรง ${thrIn.value} คัน/ชม./ฝั่ง${lcIn.checked ? ', มีการเปลี่ยนเลน' : ', ไม่มีการเปลี่ยนเลน'})`);
+      evalNote.textContent = 'แสดงผลประเมินเร็ว ปรับแถบหรือกดเริ่มใหม่เพื่อกลับไปนับสด';
+      evalBtn.disabled = false;
+    }
+  };
+  chunk();
+};
+
+// warm the simulation so the road opens with traffic already flowing
+for (let i = 0; i < 900; i++){ sims[1].step(0.05); sims[2].step(0.05); }
+sims[1].resetStats(); sims[2].resetStats();
+
+await Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1500))]);
+await Promise.all([document.fonts.load('600 44px "Anuphan"'), document.fonts.load('700 64px "Anuphan"')]).catch(() => {});
+worlds = { 1: new World(sims[1]), 2: new World(sims[2]) };
+resize(); setMode('split'); updateBoards();
+requestAnimationFrame(t => { last = t; loop(t); });
+</script>
