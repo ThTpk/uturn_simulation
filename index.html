@@ -146,12 +146,12 @@ svg .dim{stroke:var(--ink);stroke-width:1.2}
       <div class="ctl">
         <button class="btn" id="play">หยุดชั่วคราว</button>
         <div class="seg" role="group" aria-label="ความเร็ว">
-          <button id="sp1" aria-pressed="true">1×</button>
-          <button id="sp2" aria-pressed="false">2×</button>
-          <button id="sp4" aria-pressed="false">4×</button>
+          <button id="sp1" aria-pressed="true">1.5×</button>
+          <button id="sp2" aria-pressed="false">3×</button>
+          <button id="sp4" aria-pressed="false">6×</button>
         </div>
       </div>
-      <label class="ctl" for="dem">รถกลับรถ <input id="dem" type="range" min="2" max="16" step="1" value="7"> <output id="demOut">7</output> คัน/นาที ต่อฝั่ง</label>
+      <label class="ctl" for="dem">รถกลับรถ <input id="dem" type="range" min="2" max="16" step="1" value="12"> <output id="demOut">12</output> คัน/นาที ต่อฝั่ง</label>
       <label class="ctl" for="thr">รถทางตรง <input id="thr" type="range" min="400" max="2400" step="100" value="1000"> <output id="thrOut">1000</output> คัน/ชม. ต่อฝั่ง</label>
       <label class="ctl chk" for="lc"><input id="lc" type="checkbox" checked> รถเปลี่ยนเลน</label>
       <button class="btn" id="reset">เริ่มใหม่</button>
@@ -346,7 +346,7 @@ function makeScenario(type){
 
 class Sim {
   constructor(type, seed){
-    this.type = type; this.seed = seed; this.uDemand = 7; this.thrDemand = 1000; this.lc = true;
+    this.type = type; this.seed = seed; this.uDemand = 12; this.thrDemand = 1000; this.lc = true;
     this.S = makeScenario(type); this.reset();
   }
   reset(){
@@ -806,7 +806,7 @@ const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true; controls.maxPolarAngle = 1.48; controls.minDistance = 12; controls.maxDistance = 520;
 
 let worlds = null;
-let mode = 'split', cam = 'top', speed = 1, running = true, tween = null;
+let mode = 'split', cam = 'top', speed = 1.5, running = true, tween = null;
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function viewAspect(){
@@ -865,7 +865,7 @@ let last = performance.now(), accT = 0, simTime = 0;
 function loop(now){
   const dt = Math.min(0.1, (now - last) / 1000); last = now;
   if (running){
-    accT = Math.min(accT + dt * speed, 0.6);
+    accT = Math.min(accT + dt * speed, 0.9);
     while (accT >= 0.05){ sims[1].step(0.05); sims[2].step(0.05); accT -= 0.05; simTime += 0.05; }
   }
   if (tween){
@@ -983,7 +983,7 @@ document.getElementById('cNear').onclick = () => preset('near');
 const playBtn = document.getElementById('play');
 playBtn.onclick = () => { running = !running; playBtn.textContent = running ? 'หยุดชั่วคราว' : 'เล่นต่อ'; };
 for (const v of [1, 2, 4]) document.getElementById('sp' + v).onclick = () => {
-  speed = v; for (const u of [1, 2, 4]) document.getElementById('sp' + u).setAttribute('aria-pressed', String(u === v));
+  speed = v * 1.5; for (const u of [1, 2, 4]) document.getElementById('sp' + u).setAttribute('aria-pressed', String(u === v));
 };
 const dem = document.getElementById('dem'), demOut = document.getElementById('demOut');
 const thrIn = document.getElementById('thr'), thrOut = document.getElementById('thrOut'), lcIn = document.getElementById('lc');
